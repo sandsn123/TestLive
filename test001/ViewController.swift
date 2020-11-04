@@ -22,17 +22,9 @@ class ViewController: UIViewController {
     private var hasRegistRtmpObserver = false
     
     var url = "rtmps://live-api-s.facebook.com:443/rtmp/"
-    var key = "1275494526161902?s_bl=1&s_hv=0&s_psm=1&s_sc=1275494559495232&s_sw=0&s_vt=api-s&a=AbxLUjLvlJXZh2bT"
+    var key = "1275497276161627?s_bl=1&s_hv=0&s_psm=1&s_sc=1275497302828291&s_sw=0&s_vt=api-s&a=AbwYuU4rhE8TqgZ2"
     
-    var isLiving = false {
-        didSet {
-            DispatchQueue.main.async {
-                if !self.isLiving {
-                    self.liveButton.setTitle("点击直播", for: .normal)
-                }
-            }
-        }
-    }
+    var isLiving = false
     override func viewDidLoad() {
         super.viewDidLoad()
        
@@ -137,6 +129,7 @@ extension ViewController {
             return
         }
         self.isLiving = false
+        self.liveButton.setTitle("点击直播", for: .normal)
         stopTimer()
         self.rtmpConnection.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.connectClosed)
         self.rtmpConnection.close()
@@ -236,7 +229,7 @@ extension ViewController: RTMPStreamDelegate {
     func rtmpStream(_ stream: HaishinKit.RTMPStream, didPublishSufficientBW connection: HaishinKit.RTMPConnection){}
     
     func rtmpStream(_ stream: HaishinKit.RTMPStream, didOutput video: CMSampleBuffer) {
-        self.appendVideoSampleBuffer(video)
+//        self.appendVideoSampleBuffer(video)
     }
     func rtmpStream(_ stream: HaishinKit.RTMPStream, didOutput audio: AVAudioBuffer, presentationTimeStamp: CMTime) {
         
