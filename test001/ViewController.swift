@@ -19,13 +19,17 @@ class ViewController: UIViewController {
     var timer: Timer?
     private var firstPublishTime: Int64?
     var lastTimeStr: String = ""
+    private var hasRegistRtmpObserver = false
+    
     var url = "rtmps://live-api-s.facebook.com:443/rtmp/"
-    var key = "1275435362834485?s_bl=1&s_hv=0&s_psm=1&s_sc=1275435392834482&s_sw=0&s_vt=api-s&a=AbzBrlFjro6c0kiH"
+    var key = "1275494526161902?s_bl=1&s_hv=0&s_psm=1&s_sc=1275494559495232&s_sw=0&s_vt=api-s&a=AbxLUjLvlJXZh2bT"
     
     var isLiving = false {
         didSet {
             DispatchQueue.main.async {
-                self.liveButton.isSelected = self.isLiving
+                if !self.isLiving {
+                    self.liveButton.setTitle("点击直播", for: .normal)
+                }
             }
         }
     }
@@ -116,11 +120,14 @@ extension ViewController {
         guard !isLiving else {
             return
         }
-        
-        rtmpConnection.addEventListener(.rtmpStatus, selector:#selector(rtmpStatusHandler(_:)), observer: self)
-        rtmpConnection.addEventListener(.ioError, selector: #selector(rtmpErrorHandler), observer: self)
-        rtmpStream.addObserver(self, forKeyPath: "currentFPS", options: .new, context: nil)
-        
+        setupTimer()
+        self.liveButton.setTitle("准备直播", for: .normal)
+        if !self.hasRegistRtmpObserver {
+            rtmpConnection.addEventListener(.rtmpStatus, selector:#selector(rtmpStatusHandler(_:)), observer: self)
+            rtmpConnection.addEventListener(.ioError, selector: #selector(rtmpErrorHandler), observer: self)
+            rtmpStream.addObserver(self, forKeyPath: "currentFPS", options: .new, context: nil)
+            self.hasRegistRtmpObserver = true
+        }
         rtmpConnection.connect(url)
         
     }
@@ -129,11 +136,16 @@ extension ViewController {
         guard isLiving else {
             return
         }
+        self.isLiving = false
         stopTimer()
         self.rtmpConnection.dispatch(.rtmpStatus, bubbles: false, data: RTMPStream.Code.connectClosed)
         self.rtmpConnection.close()
-        rtmpConnection.removeEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler(_:)), observer: self)
-        rtmpStream.removeObserver(self, forKeyPath: "currentFPS", context: nil)
+        if self.hasRegistRtmpObserver {
+            rtmpConnection.removeEventListener(.rtmpStatus, selector: #selector(rtmpStatusHandler(_:)), observer: self)
+            rtmpStream.removeObserver(self, forKeyPath: "currentFPS", context: nil)
+            self.hasRegistRtmpObserver = false
+        }
+        
     }
     
     func setupTimer() {
@@ -161,8 +173,9 @@ extension ViewController {
                     let time = timeOffer / 1000
                     timeStr = timerText(for: Int(time))
                 }
-                if timeStr != self.liveButton.title(for: .normal) {
-                    self.liveButton.setTitle(timeStr, for: .selected)
+                if timeStr != self.lastTimeStr {
+                    self.liveButton.setTitle(timeStr, for: .normal)
+                    self.lastTimeStr = timeStr
                 }
             }
         }
@@ -190,10 +203,10 @@ extension ViewController {
                 print("\n-G8Live =========================\nWe are LIVE !! publishing to \(key) \n\n")
                 self.isLiving = true
                 self.firstPublishTime = Date().milliStamp
-                setupTimer()
+                
             default:
                 print("\n-G8Live =========================\nFailed Error: \(code)\n\n")
-                self.isLiving = false
+                
                 self.stopLiveUI()
                 break
             }
@@ -202,7 +215,7 @@ extension ViewController {
     
     @objc
     private func rtmpErrorHandler(_ notification: Notification) {
-        self.isLiving = false
+      
         self.stopLiveUI()
     }
     
